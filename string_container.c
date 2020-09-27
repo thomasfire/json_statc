@@ -27,3 +27,33 @@ void DeleteStringContainer(StringContainer *str) {
         free(str->value);
     free(str);
 }
+
+
+StringContainer *StringCatPath(const StringContainer *dest, const StringContainer *src) {
+    if (!dest || !src)
+        return NULL;
+
+    StringContainer *buffer = (StringContainer *) malloc(sizeof(StringContainer));
+    if (!buffer)
+        return NULL;
+    buffer->size = dest->size + src->size;
+    buffer->value = (char *) malloc(sizeof(char) * buffer->size);
+    strncpy(buffer->value, dest->value, dest->size - 1);
+    buffer->value[dest->size-1] = '.';
+    strncpy(&buffer->value[dest->size], src->value, src->size);
+    return buffer;
+}
+
+StringContainer *StringAdd(const StringContainer *dest, const char *value, unsigned int size) {
+    if (!dest || !value)
+        return NULL;
+
+    StringContainer *buffer = (StringContainer *) malloc(sizeof(StringContainer));
+    if (!buffer)
+        return NULL;
+    buffer->size = dest->size + size - 1;
+    buffer->value = (char *) malloc(sizeof(char) * buffer->size);
+    strncpy(buffer->value, dest->value, dest->size - 1);
+    strncpy(&buffer->value[dest->size - 1], value, size);
+    return buffer;
+}

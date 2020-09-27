@@ -4,7 +4,7 @@
 
 #pragma once
 
-typedef struct StringContainer {
+typedef struct {
     char *value;
     unsigned int size;
 } StringContainer;
@@ -13,3 +13,6 @@ typedef struct StringContainer {
 StringContainer *CreateStringContainer(const char *value, unsigned int size);
 
 void DeleteStringContainer(StringContainer *str);
+
+StringContainer *StringCatPath(const StringContainer * dest, const StringContainer * src);
+StringContainer *StringAdd(const StringContainer * dest, const char * value, unsigned int size);

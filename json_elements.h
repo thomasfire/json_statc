@@ -7,7 +7,7 @@
 #include "list.h"
 #include "string_container.h"
 
-typedef enum JsonType {
+typedef enum {
     kNull,
     kNumeric,
     kString,
@@ -16,7 +16,7 @@ typedef enum JsonType {
     kObject
 } JsonType;
 
-typedef struct JsonStatistics {
+typedef struct {
     unsigned int n_nulls;
     unsigned int n_numeric;
     unsigned int n_strings;
@@ -27,25 +27,24 @@ typedef struct JsonStatistics {
 } JsonStatistics;
 
 
-typedef struct JsonElement {
-    // struct JsonStatistics statistics;
-    enum JsonType type;
+typedef struct {
+    JsonType type;
     void *data_ptr; // not nullptr only for objects and arrays. It is memory optimization
     unsigned int size;
 } JsonElement;
 
-typedef struct KeyValuePair {
+typedef struct {
     StringContainer *key;
     JsonElement *value;
 } KeyValuePair;
 
 
-typedef struct JsonObject {
+typedef struct {
     List *key_value_pairs_begin;
     List *key_value_pairs_end;
 } JsonObject;
 
-typedef struct JsonArray {
+typedef struct {
     List *elements_begin;
     List *elements_end;
 } JsonArray;

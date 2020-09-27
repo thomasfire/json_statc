@@ -6,14 +6,14 @@
 
 #include "json_elements.h"
 
-typedef enum ReadResult {
+typedef enum {
     kReadOk,
     kReadEmpty,
     kReadFailure,
     kParseFailure
 } ReadResult;
 
-JsonElement *GetRootFromFile(const char *filepath, enum ReadResult *result);
+JsonElement *GetRootFromFile(const char *filepath, ReadResult *result);
 
 void PrintStatistics(JsonElement *root_ptr);
 
