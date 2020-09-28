@@ -34,8 +34,8 @@ List *PushToList(List *list_ptr, void *value, unsigned int size) {
     buffer->value = value;
     buffer->size = size;
     if (list_ptr)
-        list_ptr->next = buffer;
-    buffer->previous = list_ptr;
+        list_ptr->next = (struct List *) buffer;
+    buffer->previous = (struct List *) list_ptr;
     return buffer;
 }
 

@@ -9,8 +9,8 @@
 #include "file_reader.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 JsonElement *ProcessStrToJson(const StringContainer *json_str) {
     JsonElement *root = NULL;
@@ -49,14 +49,21 @@ JsonElement *GetRootFromFile(const char *filepath, ReadResult *result) {
 }
 
 
-void FormattedStatisticsOutPut(const JsonStatistics *stats, const char *path) {
-    printf("Object: %s\nNulls:%d\nNumerics:%d\nStrings:%d\nBools:%d\nArrays:%d\nObjects:%d\nDepth:%d\n", path,
+void FormattedStatisticsOutPut(const JsonStatistics *stats, const char *path, bool is_object) {
+    if (is_object)
+        printf("Object");
+    else
+        printf("Array");
+    printf(": %s\n\tNulls:%d\n\tNumerics:%d\n\tStrings:%d\n\tBools:%d\n\tArrays:%d\n\tObjects:%d\n\tDepth:%d\n\n",
+           path,
            stats->n_nulls, stats->n_numeric,
            stats->n_strings, stats->n_bools,
            stats->n_arrays, stats->n_objects, stats->depth);
 }
 
-JsonStatistics PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContainer * path) {
+JsonStatistics
+PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContainer *path, unsigned int *max_level,
+                  StringContainer *max_level_path) {
     JsonStatistics stats = {0, 0, 0, 0, 0, 0, level};
 
     if (!root_ptr)
@@ -83,10 +90,20 @@ JsonStatistics PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, cons
     do {
         if (!buffer->value)
             continue;
-        JsonElement *element = type == kArray ? (JsonElement *) buffer->value : ((KeyValuePair *) buffer->value)->value;
+        JsonElement *element =
+                type != kObject ? (JsonElement *) buffer->value : ((KeyValuePair *) buffer->value)->value;
         if (!element)
             continue;
         JsonType elem_type = element->type;
+        StringContainer *prefix = NULL;
+        if (type == kObject && (elem_type == kObject || elem_type == kArray))
+            prefix = StringCatPath(path, ((KeyValuePair *) buffer->value)->key);
+        else if (type == kArray && (elem_type == kObject || elem_type == kArray)) {
+            char str[20] = {0};
+            memset(str, 0, 20);
+            sprintf(str, "[%d]", index);
+            prefix = StringAdd(path, str, strnlen(str, 20) + 1);
+        }
         switch (elem_type) {
             case kNull:
                 stats.n_nulls++;
@@ -100,31 +117,43 @@ JsonStatistics PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, cons
             case kBool:
                 stats.n_bools++;
                 break;
-            case kArray:
+            case kArray: {
                 stats.n_arrays++;
-                char str[20];
-                sprintf(str, ".%d", index);
-                StringContainer * buffername= StringAdd(path, str, strnlen(str, 20));
-                JsonStatistics child_stat = PrintStatsPrivate(element, level + 1, buffername);
+                JsonStatistics child_stat = PrintStatsPrivate(element, level + 1, prefix, max_level, max_level_path);
                 SumStats(&stats, &child_stat);
-                DeleteStringContainer(buffername);
                 break;
-            case kObject:
+            }
+            case kObject: {
                 stats.n_objects++;
-                StringContainer * buffer_name= StringCatPath(path, ((KeyValuePair *) buffer->value)->key);
-                JsonStatistics child_obj_stat = PrintStatsPrivate(element, level + 1, buffer_name);
+                JsonStatistics child_obj_stat = PrintStatsPrivate(element, level + 1, prefix, max_level,
+                                                                  max_level_path);
                 SumStats(&stats, &child_obj_stat);
-                DeleteStringContainer(buffer_name);
+            }
         };
+        if (prefix)
+            DeleteStringContainer(prefix);
         index++;
     } while ((buffer = NextNList(buffer, 1)));
 
-    FormattedStatisticsOutPut(&stats, path->value);
+    FormattedStatisticsOutPut(&stats, path->value, type == kObject);
+
+    if (level > *max_level) {
+        *max_level = level;
+        EmplaceStringContainer(max_level_path, path);
+    }
+
+    return stats;
 }
 
 void PrintStatistics(JsonElement *root_ptr) {
-    StringContainer * buffer = CreateStringContainer("root", 5);
-    PrintStatsPrivate(root_ptr, 0, buffer);
+    StringContainer *buffer = CreateStringContainer("$", 2);
+    StringContainer *max_path = CreateStringContainer("$", 2);
+    unsigned int max_depth = 0;
+    PrintStatsPrivate(root_ptr, 0, buffer, &max_depth, max_path);
+
+    printf("Deepest object/array is `%s` with depth = %d.\n", max_path->value, max_depth);
+
+    DeleteStringContainer(max_path);
     DeleteStringContainer(buffer);
 }
 

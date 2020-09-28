@@ -20,6 +20,32 @@ StringContainer *CreateStringContainer(const char *value, unsigned int size) {
     return buffer;
 }
 
+StringContainer *CreateStringContainerWithNull(const char *value, unsigned int size) {
+    if (!value || !size)
+        return NULL;
+
+    StringContainer *buffer = (StringContainer *) malloc(sizeof(StringContainer));
+    if (!buffer)
+        return NULL;
+    buffer->size = size + 1;
+    buffer->value = (char *) malloc(sizeof(char) * (size + 1));
+    strncpy(buffer->value, value, size);
+    buffer->value[size] = '\0';
+    return buffer;
+}
+
+void EmplaceStringContainer(StringContainer *dest, const StringContainer *src) {
+    if (!dest || !src)
+        return;
+
+    if (dest->value)
+        free(dest->value);
+
+    dest->value = (char *) malloc(sizeof(char) * src->size);
+    dest->size = src->size;
+    strncpy(dest->value, src->value, dest->size);
+}
+
 void DeleteStringContainer(StringContainer *str) {
     if (!str)
         return;
@@ -39,7 +65,7 @@ StringContainer *StringCatPath(const StringContainer *dest, const StringContaine
     buffer->size = dest->size + src->size;
     buffer->value = (char *) malloc(sizeof(char) * buffer->size);
     strncpy(buffer->value, dest->value, dest->size - 1);
-    buffer->value[dest->size-1] = '.';
+    buffer->value[dest->size - 1] = '.';
     strncpy(&buffer->value[dest->size], src->value, src->size);
     return buffer;
 }

@@ -112,7 +112,8 @@ JsonElement *CreateElementFromObject(JsonObject *object) {
 void PushToObject(JsonObject *object_ptr, KeyValuePair *element) {
     if (!object_ptr || !element)
         return;
-    object_ptr->key_value_pairs_end = PushToList(object_ptr->key_value_pairs_end, element, sizeof(KeyValuePair));
+    object_ptr->key_value_pairs_end = PushToList(object_ptr->key_value_pairs_end, (void *) element,
+                                                 sizeof(KeyValuePair));
     if (!object_ptr->key_value_pairs_begin)
         object_ptr->key_value_pairs_begin = object_ptr->key_value_pairs_end;
 }
@@ -132,6 +133,4 @@ void SumStats(JsonStatistics *dest, const JsonStatistics *src) {
     dest->n_numeric += src->n_numeric;
     dest->n_objects += src->n_objects;
     dest->n_strings += src->n_strings;
-    if (src->depth > dest->depth)
-        dest->depth = src->depth;
 }

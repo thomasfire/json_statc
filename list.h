@@ -4,7 +4,7 @@
 
 #pragma once
 
-typedef struct {
+typedef struct List {
     struct List *previous;
     struct List *next;
     void *value;

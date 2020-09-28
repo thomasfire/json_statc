@@ -45,7 +45,7 @@ KeyValuePair *HandleKeyPair(const StringContainer *string, unsigned int *begin) 
                 return NULL;
         }
         if (string->value[*begin] == '"') {
-            key = CreateStringContainer(&string->value[str_begin], *begin - str_begin);
+            key = CreateStringContainerWithNull(&string->value[str_begin], *begin - str_begin);
             (*begin)++;
             break;
         }
