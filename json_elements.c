@@ -80,7 +80,7 @@ JsonElement *CreateElementFromArray(JsonArray *array) {
 void PushToArray(JsonArray *array_ptr, JsonElement *element) {
     if (!array_ptr || !element)
         return;
-    array_ptr->elements_end = PushToList(array_ptr->elements_end, element, sizeof(JsonElement));
+    array_ptr->elements_end = PushToList(array_ptr->elements_end, element);
     if (!array_ptr->elements_begin)
         array_ptr->elements_begin = array_ptr->elements_end;
 }
@@ -112,8 +112,7 @@ JsonElement *CreateElementFromObject(JsonObject *object) {
 void PushToObject(JsonObject *object_ptr, KeyValuePair *element) {
     if (!object_ptr || !element)
         return;
-    object_ptr->key_value_pairs_end = PushToList(object_ptr->key_value_pairs_end, (void *) element,
-                                                 sizeof(KeyValuePair));
+    object_ptr->key_value_pairs_end = PushToList(object_ptr->key_value_pairs_end, (void *) element);
     if (!object_ptr->key_value_pairs_begin)
         object_ptr->key_value_pairs_begin = object_ptr->key_value_pairs_end;
 }

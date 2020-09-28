@@ -12,6 +12,16 @@
 #include <string.h>
 #include <stdbool.h>
 
+JsonStatistics
+PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContainer *path, unsigned int *max_level,
+                  StringContainer *max_level_path);
+
+void
+HandleElementsStatistics(JsonType elem_type, JsonStatistics *stats, const StringContainer *prefix, JsonElement *element,
+                         unsigned int level, unsigned int *max_level,
+                         StringContainer *max_level_path);
+
+
 JsonElement *ProcessStrToJson(const StringContainer *json_str) {
     JsonElement *root = NULL;
     unsigned int index = 0;
@@ -61,6 +71,40 @@ void FormattedStatisticsOutPut(const JsonStatistics *stats, const char *path, bo
            stats->n_arrays, stats->n_objects, stats->depth);
 }
 
+void
+HandleElementsStatistics(JsonType elem_type, JsonStatistics *stats, const StringContainer *prefix, JsonElement *element,
+                         unsigned int level, unsigned int *max_level,
+                         StringContainer *max_level_path) {
+    switch (elem_type) {
+        case kNull:
+            stats->n_nulls++;
+            break;
+        case kNumeric:
+            stats->n_numeric++;
+            break;
+        case kString:
+            stats->n_strings++;
+            break;
+        case kBool:
+            stats->n_bools++;
+            break;
+        case kArray: {
+            stats->n_arrays++;
+            JsonStatistics child_stat = PrintStatsPrivate(element, level, prefix, max_level, max_level_path);
+            SumStats(stats, &child_stat);
+            break;
+        }
+        case kObject: {
+            stats->n_objects++;
+            JsonStatistics child_obj_stat = PrintStatsPrivate(element, level, prefix, max_level,
+                                                              max_level_path);
+            SumStats(stats, &child_obj_stat);
+        }
+        default:
+            break;
+    }
+}
+
 JsonStatistics
 PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContainer *path, unsigned int *max_level,
                   StringContainer *max_level_path) {
@@ -69,22 +113,15 @@ PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContain
     if (!root_ptr)
         return stats;
     JsonType type = root_ptr->type;
-    switch (type) {
-        case kNull:
-        case kNumeric:
-        case kString:
-        case kBool:
-            return stats;
-        case kArray:
-        case kObject:
-            break;
-    };
+
     List *buffer = NULL;
 
     if (type == kArray)
         buffer = ((JsonArray *) root_ptr->data_ptr)->elements_begin;
-    else
+    else if (type == kObject)
         buffer = ((JsonObject *) root_ptr->data_ptr)->key_value_pairs_begin;
+    else
+        return stats;
 
     unsigned int index = 0;
     do {
@@ -96,40 +133,18 @@ PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContain
             continue;
         JsonType elem_type = element->type;
         StringContainer *prefix = NULL;
-        if (type == kObject && (elem_type == kObject || elem_type == kArray))
-            prefix = StringCatPath(path, ((KeyValuePair *) buffer->value)->key);
-        else if (type == kArray && (elem_type == kObject || elem_type == kArray)) {
-            char str[20] = {0};
-            memset(str, 0, 20);
-            sprintf(str, "[%d]", index);
-            prefix = StringAdd(path, str, strnlen(str, 20) + 1);
+        if (elem_type == kObject || elem_type == kArray) {
+            if (type == kObject)
+                prefix = StringCatPath(path, ((KeyValuePair *) buffer->value)->key);
+            else {
+                char str[20] = {0};
+                memset(str, 0, 20);
+                sprintf(str, "[%d]", index);
+                prefix = StringAdd(path, str, strnlen(str, 20) + 1);
+            }
         }
-        switch (elem_type) {
-            case kNull:
-                stats.n_nulls++;
-                break;
-            case kNumeric:
-                stats.n_numeric++;
-                break;
-            case kString:
-                stats.n_strings++;
-                break;
-            case kBool:
-                stats.n_bools++;
-                break;
-            case kArray: {
-                stats.n_arrays++;
-                JsonStatistics child_stat = PrintStatsPrivate(element, level + 1, prefix, max_level, max_level_path);
-                SumStats(&stats, &child_stat);
-                break;
-            }
-            case kObject: {
-                stats.n_objects++;
-                JsonStatistics child_obj_stat = PrintStatsPrivate(element, level + 1, prefix, max_level,
-                                                                  max_level_path);
-                SumStats(&stats, &child_obj_stat);
-            }
-        };
+        HandleElementsStatistics(elem_type, &stats, prefix, element, level, max_level,
+                                 max_level_path);
         if (prefix)
             DeleteStringContainer(prefix);
         index++;
