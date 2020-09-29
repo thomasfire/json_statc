@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-JsonStatistics
+void
 PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContainer *path, unsigned int *max_level,
                   StringContainer *max_level_path);
 
@@ -90,28 +90,26 @@ HandleElementsStatistics(JsonType elem_type, JsonStatistics *stats, const String
             break;
         case kArray: {
             stats->n_arrays++;
-            JsonStatistics child_stat = PrintStatsPrivate(element, level, prefix, max_level, max_level_path);
-            SumStats(stats, &child_stat);
+            PrintStatsPrivate(element, level, prefix, max_level, max_level_path);
             break;
         }
         case kObject: {
             stats->n_objects++;
-            JsonStatistics child_obj_stat = PrintStatsPrivate(element, level, prefix, max_level,
-                                                              max_level_path);
-            SumStats(stats, &child_obj_stat);
+            PrintStatsPrivate(element, level, prefix, max_level,
+                              max_level_path);
         }
         default:
             break;
     }
 }
 
-JsonStatistics
+void
 PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContainer *path, unsigned int *max_level,
                   StringContainer *max_level_path) {
     JsonStatistics stats = {0, 0, 0, 0, 0, 0, level};
 
     if (!root_ptr)
-        return stats;
+        return;
     JsonType type = root_ptr->type;
 
     List *buffer = NULL;
@@ -121,7 +119,7 @@ PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContain
     else if (type == kObject)
         buffer = ((JsonObject *) root_ptr->data_ptr)->key_value_pairs_begin;
     else
-        return stats;
+        return;
 
     unsigned int index = 0;
     do {
@@ -143,7 +141,7 @@ PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContain
                 prefix = StringAdd(path, str, strnlen(str, 20) + 1);
             }
         }
-        HandleElementsStatistics(elem_type, &stats, prefix, element, level, max_level,
+        HandleElementsStatistics(elem_type, &stats, prefix, element, level + 1, max_level,
                                  max_level_path);
         if (prefix)
             DeleteStringContainer(prefix);
@@ -156,8 +154,6 @@ PrintStatsPrivate(JsonElement *root_ptr, unsigned int level, const StringContain
         *max_level = level;
         EmplaceStringContainer(max_level_path, path);
     }
-
-    return stats;
 }
 
 void PrintStatistics(JsonElement *root_ptr) {
